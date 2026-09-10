@@ -63,65 +63,68 @@ The following diagram illustrates the complete user journey and state transition
 
 ```mermaid
 flowchart TD
-    Start([App Launch / Cold Start]) --> InitStorage[Initialize Local Storage Adapter]
-    InitStorage --> LoadProfile[Fetch Business Profile from Device]
-    InitStorage --> LoadInvoices[Fetch Invoices from Device]
+    Start["App Launch / Cold Start"] --> InitStorage["Initialize Local Storage Adapter"]
+    InitStorage --> LoadProfile["Fetch Business Profile from Device"]
+    InitStorage --> LoadInvoices["Fetch Invoices from Device"]
 
-    LoadProfile & LoadInvoices --> Dashboard[Dashboard Screen]
+    LoadProfile --> Dashboard["Dashboard Screen"]
+    LoadInvoices --> Dashboard
 
     %% Dashboard actions
-    Dashboard --> ViewKPIs[Review KPI Metrics:<br/>Total Billed | Pending | Paid]
-    Dashboard --> FilterInvoices{Filter Invoices}
-    FilterInvoices -->|All| ShowAll[Display All Documents]
-    FilterInvoices -->|Invoices| ShowInvoices[Display Invoices Only]
-    FilterInvoices -->|Quotes| ShowQuotes[Display Quotes Only]
+    Dashboard --> ViewKPIs["Review KPI Metrics: Total Billed, Pending, Paid"]
+    Dashboard --> FilterInvoices{"Filter Invoices"}
+    FilterInvoices -->|All| ShowAll["Display All Documents"]
+    FilterInvoices -->|Invoices| ShowInvoices["Display Invoices Only"]
+    FilterInvoices -->|Quotes| ShowQuotes["Display Quotes Only"]
 
-    Dashboard --> ToggleStatus[Toggle Status Pill:<br/>PENDING ⟷ PAID]
-    ToggleStatus --> UpdateStore[Persist Updated Status to Storage]
-    UpdateStore --> RefreshKPIs[Auto-recalculate Live Metrics]
+    Dashboard --> ToggleStatus["Toggle Status Pill: PENDING / PAID"]
+    ToggleStatus --> UpdateStore["Persist Updated Status to Storage"]
+    UpdateStore --> RefreshKPIs["Auto-recalculate Live Metrics"]
     RefreshKPIs --> Dashboard
 
-    Dashboard --> OpenSettings[Tap Settings Button]
-    OpenSettings --> ProfileModal[Company Profile Modal]
-    ProfileModal --> EditProfile[Edit Name, Address, Tax ID, Currency]
-    EditProfile --> SaveProfile[Persist Profile to Storage]
+    Dashboard --> OpenSettings["Tap Settings Button"]
+    OpenSettings --> ProfileModal["Company Profile Modal"]
+    ProfileModal --> EditProfile["Edit Name, Address, Tax ID, Currency"]
+    EditProfile --> SaveProfile["Persist Profile to Storage"]
     SaveProfile --> Dashboard
 
     %% Create / Edit flow
-    Dashboard --> TapCreate[Tap '+ New Document' FAB]
-    Dashboard --> TapCard[Tap Existing Document Row]
+    Dashboard --> TapCreate["Tap New Document FAB"]
+    Dashboard --> TapCard["Tap Existing Document Row"]
 
-    TapCreate --> NewDoc[Open InvoiceEditorScreen: Fresh DTO]
-    TapCard --> EditDoc[Open InvoiceEditorScreen: Existing Model]
+    TapCreate --> NewDoc["Open InvoiceEditorScreen: Fresh DTO"]
+    TapCard --> EditDoc["Open InvoiceEditorScreen: Existing Model"]
 
-    NewDoc & EditDoc --> SetType{Select Type}
-    SetType -->|Invoice| InvSeq[Sequence: INV-YYYY-XXXX]
-    SetType -->|Quote| QuoSeq[Sequence: QUO-YYYY-XXXX]
+    NewDoc --> SetType{"Select Type"}
+    EditDoc --> SetType
+    SetType -->|Invoice| InvSeq["Sequence: INV-YYYY-XXXX"]
+    SetType -->|Quote| QuoSeq["Sequence: QUO-YYYY-XXXX"]
 
-    InvSeq & QuoSeq --> EditClient[Fill Client Information]
-    EditClient --> LineItems[Manage Line Items]
+    InvSeq --> EditClient["Fill Client Information"]
+    QuoSeq --> EditClient
+    EditClient --> LineItems["Manage Line Items"]
     
-    LineItems --> AddItem[Add Dynamic Row]
-    LineItems --> RemoveItem[Remove Row]
-    LineItems --> EditPrice[Update Quantity or Unit Price]
+    LineItems --> AddItem["Add Dynamic Row"]
+    LineItems --> RemoveItem["Remove Row"]
+    LineItems --> EditPrice["Update Quantity or Unit Price"]
 
-    EditPrice --> LiveCalc[Pure Domain computeInvoiceTotals:<br/>Subtotal + Tax% - Discount%]
-    LiveCalc --> UpdateSummaryCard[Render Real-time Totals Card]
+    EditPrice --> LiveCalc["Pure Domain computeInvoiceTotals: Subtotal + Tax - Discount"]
+    LiveCalc --> UpdateSummaryCard["Render Real-time Totals Card"]
 
-    UpdateSummaryCard --> UserChoice{User Action}
+    UpdateSummaryCard --> UserChoice{"User Action"}
 
-    UserChoice -->|Cancel| Discard[Discard & Return to Dashboard]
+    UserChoice -->|Cancel| Discard["Discard and Return to Dashboard"]
     Discard --> Dashboard
 
-    UserChoice -->|Save Only| ValidateSave[Validate Client & Item Descriptions]
-    ValidateSave -->|Pass| CommitSave[Persist Document to Storage]
+    UserChoice -->|Save Only| ValidateSave["Validate Client and Item Descriptions"]
+    ValidateSave -->|Pass| CommitSave["Persist Document to Storage"]
     CommitSave --> Dashboard
 
-    UserChoice -->|Share PDF| ValidateShare[Validate Required Fields]
-    ValidateShare -->|Pass| CommitDoc[Save Document to Storage]
-    CommitDoc --> HTMLCompile[Generate Standalone A4 HTML with CSS Print]
-    HTMLCompile --> PrintEngine[expo-print: Compile HTML to Local .pdf URI]
-    PrintEngine --> NativeShare[expo-sharing: Present Native OS Share Sheet]
+    UserChoice -->|Share PDF| ValidateShare["Validate Required Fields"]
+    ValidateShare -->|Pass| CommitDoc["Save Document to Storage"]
+    CommitDoc --> HTMLCompile["Generate Standalone A4 HTML with CSS Print"]
+    HTMLCompile --> PrintEngine["expo-print: Compile HTML to Local PDF URI"]
+    PrintEngine --> NativeShare["expo-sharing: Present Native OS Share Sheet"]
     NativeShare -->|Completed| Dashboard
 ```
 
@@ -133,23 +136,23 @@ Facturix enforces a strict **Clean Architecture / Hexagonal Architecture** layer
 
 ```mermaid
 graph TD
-    subgraph UI ["Presentation Layer (Atomic UI & Screens)"]
+    subgraph UI ["Presentation Layer (Atomic UI and Screens)"]
         direction TB
-        Screens["Screens: DashboardScreen | InvoiceEditorScreen"]
-        Components["Components: Card | Button | Badge | MetricBox | CurrencyInput | SegmentedControl | InvoiceCard | CompanyProfileModal"]
+        Screens["Screens: DashboardScreen and InvoiceEditorScreen"]
+        Components["Components: Card, Button, Badge, MetricBox, CurrencyInput, SegmentedControl, InvoiceCard, CompanyProfileModal"]
     end
 
     subgraph Application ["Application Layer (Custom React Hooks)"]
         direction TB
         Hook1["useInvoiceManager: CRUD, Filter, Sequence Numbering, Live Financial KPI Calculation"]
-        Hook2["useCompanyProfile: Business Metadata, Currency Preference & Sync"]
+        Hook2["useCompanyProfile: Business Metadata, Currency Preference and Sync"]
     end
 
-    subgraph Infrastructure ["Infrastructure Adapters (I/O & Platform SDKs)"]
+    subgraph Infrastructure ["Infrastructure Adapters (I/O and Platform SDKs)"]
         direction TB
         Storage["StorageService: AsyncStorage v2 Adapter, Corrupted JSON Recovery, Schema Guards"]
         PDF["PdfService: Responsive A4 HTML Generator, CSS Print, XSS Sanitization"]
-        Share["ShareService: expo-print to file + expo-sharing sheet"]
+        Share["ShareService: expo-print to file and expo-sharing sheet"]
     end
 
     subgraph Domain ["Pure Domain Layer (Zero Dependencies)"]
