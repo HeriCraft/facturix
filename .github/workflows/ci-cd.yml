@@ -33,7 +33,7 @@ jobs:
         run: bun run test -- --coverage
 
       - name: Publish Coverage Report to Job Summary
-        run: node scripts/generate-coverage-summary.js
+        run: bun scripts/generate-coverage-summary.js
         env:
           GITHUB_STEP_SUMMARY: ${{ env.GITHUB_STEP_SUMMARY }}
 
@@ -53,11 +53,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
       - name: Setup Bun runtime
         uses: oven-sh/setup-bun@v2
         with:
@@ -66,14 +61,8 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Setup Expo & EAS CLI
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
-
       - name: Build & Submit Android App Bundle (.aab) to Google Play Store
         run: |
-          eas build --platform android --profile production --auto-submit --non-interactive
+          bunx eas-cli build --platform android --profile production --auto-submit --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
