@@ -440,5 +440,32 @@ bunx eas-cli build --platform android --profile production
 
 ---
 
+## CI/CD Pipeline (GitHub Actions)
+
+Facturix includes an automated CI/CD pipeline defined in [`.github/workflows/ci-cd.yml`](file:///.github/workflows/ci-cd.yml).
+
+### Trigger
+- **Automatic**: Triggered on any `git push` to the `prod` branch.
+- **Manual**: Supports on-demand triggering via GitHub Actions `workflow_dispatch`.
+
+### Pipeline Jobs & Workflow
+1. **`test` (Run Tests & Code Coverage)**:
+   - Sets up the Bun runtime.
+   - Executes static type check (`bunx tsc --noEmit`).
+   - Executes the Jest test suite with coverage collection (`bun run test -- --coverage`).
+   - Automatically formats and publishes a markdown table of coverage percentages (statements, branches, functions, lines) directly to **GitHub Actions Step Summary**.
+   - Uploads coverage artifacts for download.
+2. **`build-and-deploy` (Build & Deploy to Google Play Store)**:
+   - **Dependency**: Runs only after the `test` job passes.
+   - Sets up Node.js 20, Bun, and the Expo & EAS CLI via `expo/expo-github-action`.
+   - Executes `eas build --platform android --profile production --auto-submit --non-interactive`.
+   - Compiles the production Android App Bundle (`.aab`) with auto-incremented build versions and submits directly to the Google Play Store (configured for the `internal` release track in `eas.json`).
+
+### Required GitHub Secrets
+To enable automated deployments, configure the following secret in your GitHub repository (**Settings > Secrets and variables > Actions**):
+- **`EXPO_TOKEN`**: A personal access token from your Expo account (created at [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens)).
+
+---
+
 ## License
 MIT License. Built with privacy and craft by Granix.
