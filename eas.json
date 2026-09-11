@@ -5,13 +5,16 @@
   },
   "build": {
     "development": {
+      "bun": "1.4.2",
       "developmentClient": true,
       "distribution": "internal"
     },
     "preview": {
+      "bun": "1.4.2",
       "distribution": "internal"
     },
     "production": {
+      "bun": "1.4.2",
       "autoIncrement": true,
       "env": {
         "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
