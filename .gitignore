@@ -48,6 +48,12 @@ ehthumbs.db
 # Local environment & Secrets
 .env
 .env*.local
+facturix-*.json
+*service-account*.json
+*service_account*.json
+*credentials*.json
+google-service-account*.json
+google-services.json
 
 # TypeScript build info
 *.tsbuildinfo

@@ -61,8 +61,69 @@ jobs:
       - name: Install dependencies
         run: bun install
 
-      - name: Build & Submit Android App Bundle (.aab) to Google Play Store
+      - name: Build Android App Bundle (.aab)
         run: |
-          bunx eas-cli build --platform android --profile production --auto-submit --non-interactive
+          bunx eas-cli build --platform android --profile production --non-interactive
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EAS_BUILD_NO_EXPO_GO_WARNING: "true"
+
+      - name: Create Google Service Account file (if secret is configured)
+        if: env.GOOGLE_SERVICES_JSON != ''
+        run: echo "$GOOGLE_SERVICES_JSON" > ./google-service-account.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+
+      - name: Submit to Google Play Store
+        run: |
+          bunx eas-cli submit --platform android --profile production --latest --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+  tag-release:
+    name: Create Git Release Tag
+    needs: [test, build-and-deploy]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Bun runtime
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Configure Git Author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create and Push Git Tag from app.json version
+        run: |
+          VERSION=$(bun -e "console.log(require('./app.json').expo.version)")
+          if [ -z "$VERSION" ]; then
+            echo "Error: Version not found in app.json"
+            exit 1
+          fi
+
+          if [[ "$VERSION" =~ ^v ]]; then
+            TAG_NAME="$VERSION"
+          else
+            TAG_NAME="v$VERSION"
+          fi
+
+          echo "Target release tag: $TAG_NAME"
+
+          if git ls-remote --tags origin "refs/tags/$TAG_NAME" | grep -q "$TAG_NAME"; then
+            echo "Tag $TAG_NAME already exists on remote. Skipping tag creation."
+          else
+            echo "Creating annotated tag $TAG_NAME..."
+            git tag -a "$TAG_NAME" -m "Facturix Release $TAG_NAME"
+            git push origin "$TAG_NAME"
+            echo "Tag $TAG_NAME pushed successfully to origin."
+          fi
+

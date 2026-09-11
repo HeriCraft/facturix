@@ -457,13 +457,21 @@ Facturix includes an automated CI/CD pipeline defined in [`.github/workflows/ci-
    - Uploads coverage artifacts for download.
 2. **`build-and-deploy` (Build & Deploy to Google Play Store)**:
    - **Dependency**: Runs only after the `test` job passes.
-   - Sets up Node.js 20, Bun, and the Expo & EAS CLI via `expo/expo-github-action`.
-   - Executes `eas build --platform android --profile production --auto-submit --non-interactive`.
-   - Compiles the production Android App Bundle (`.aab`) with auto-incremented build versions and submits directly to the Google Play Store (configured for the `internal` release track in `eas.json`).
+   - Sets up Bun runtime and EAS CLI.
+   - Compiles the production Android App Bundle (`.aab`) with auto-incremented build versions via `bunx eas-cli build`.
+   - Submits the bundle directly to Google Play Store (`internal` track) via `bunx eas-cli submit`.
+3. **`tag-release` (Create Git Release Tag)**:
+   - **Dependency**: Runs only after **both** `test` and `build-and-deploy` succeed.
+   - Reads the application version directly from [`app.json`](file:///app.json) (`expo.version`, e.g. `1.0.0`).
+   - Formats the release tag (e.g. `v1.0.0`).
+   - Verifies if the tag already exists on remote to maintain idempotency.
+   - Automatically creates an annotated Git tag and pushes it to `origin`.
 
-### Required GitHub Secrets
-To enable automated deployments, configure the following secret in your GitHub repository (**Settings > Secrets and variables > Actions**):
-- **`EXPO_TOKEN`**: A personal access token from your Expo account (created at [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens)).
+### Required GitHub Secrets & Configuration
+To enable automated builds and deployments, configure the following secrets in your GitHub repository (**Settings > Secrets and variables > Actions**):
+- **`EXPO_TOKEN`** (Required): A personal access token from your Expo account (created at [expo.dev/settings/access-tokens](https://expo.dev/settings/access-tokens)).
+- **`GOOGLE_SERVICES_JSON`** (Optional): Google Play Store Service Account JSON key for automated submissions.
+- **Workflow permissions**: Ensure **Read and write permissions** are enabled under **Settings > Actions > General > Workflow permissions** so the workflow can push release tags.
 
 ---
 

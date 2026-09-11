@@ -1,6 +1,6 @@
 {
   "cli": {
-    "version": ">= 24.0.0",
+    "version": "24.0.0",
     "appVersionSource": "remote"
   },
   "build": {
@@ -12,7 +12,10 @@
       "distribution": "internal"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EAS_BUILD_NO_EXPO_GO_WARNING": "true"
+      }
     }
   },
   "submit": {
